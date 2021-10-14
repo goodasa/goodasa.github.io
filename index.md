@@ -39,8 +39,8 @@ Hi~!
 ### Test
 
 * [WSL_Docker](./TEST/(190404)wsl_docker/wsl_docker.html)
-* [11Lines_Matlab][./TEST/(190411)11lines_matlab/(190411)11lines_matlab.html]
-* [Ruby][./TEST/(190614)ruby_sketchup/ruby.html]
+* [11Lines_Matlab](./TEST/(190411)11lines_matlab/(190411)11lines_matlab.html)
+* [Ruby](./TEST/(190614)ruby_sketchup/ruby.html)
 
 
 
