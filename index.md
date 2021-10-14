@@ -10,6 +10,24 @@ Artificial general intelligence (AGI) is the intelligence of a machine that coul
 
 
 
+## General
+
+## Monday Labo
+
+## Tuesday Labo
+
+## Wednesday Labo
+
+## Thursday Labo
+
+AGI, 환경
+
+## Friday Labo
+
+## My Drawers
+
+
+
 
 
 ### Links
