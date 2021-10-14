@@ -2,11 +2,11 @@
         document.write("<font color='green' size='1'>This document was last modified on " + document.lastModified + "</font>");
 </script>
 
-# AGI: Artificial General Intelligence
+# CHOI's Labo
 
 ---
 
-Artificial general intelligence (AGI) is the intelligence of a machine that could successfully perform any intellectual task that a human being can. It is a primary goal of artificial intelligence research and an important topic for science fiction writers and futurists. Artificial general intelligence is also referred to as "strong AI", "full AI" or as the ability of a machine to perform
+Hi~!
 
 
 
@@ -20,7 +20,7 @@ Artificial general intelligence (AGI) is the intelligence of a machine that coul
 
 ## Thursday Labo
 
-AGI, 환경
+- AGI, 환경
 
 ## Friday Labo
 
@@ -36,7 +36,11 @@ AGI, 환경
 
 
 
+### Test
 
+* [WSL_Docker](./TEST/(190404)wsl_docker/wsl_docker.html)
+* [11Lines_Matlab][./TEST/(190411)11lines_matlab/(190411)11lines_matlab.html]
+* [Ruby][./TEST/(190614)ruby_sketchup/ruby.html]
 
 
 
