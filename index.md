@@ -1,11 +1,40 @@
 <script language="javascript" type="text/javascript">
         document.write("<font color='green' size='1'>This document was last modified on " + document.lastModified + "</font>");
 </script>
+<<<<<<< Updated upstream
 # CHOI's Labo
 
 Due to the fact that I am broke, I prefer Text only websites.
 
 
+=======
+
+# Labo YB: 研究会
+
+---
+
+[toc]
+
+---
+
+## General
+
+## Labo 月
+
+## Labo 火
+
+## Labo 水
+
+## Labo 木
+
+AGI, 환경
+
+## Labo 金
+
+## Class 週末
+
+## My たんす
+>>>>>>> Stashed changes
 
 **My System**
 
@@ -25,6 +54,7 @@ Due to the fact that I am broke, I prefer Text only websites.
 | **Wednesday** | **My Drawers**      |
 |               |                     |
 
+<<<<<<< Updated upstream
 
 
 ## Contact
@@ -34,6 +64,9 @@ Due to the fact that I am broke, I prefer Text only websites.
 - <a href="./PGP_Public_CHOI_Yunbum.txt">My PGP Public Key</a>
 
 
+=======
+---
+>>>>>>> Stashed changes
 
 
 <address>
