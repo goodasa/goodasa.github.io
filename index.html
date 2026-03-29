@@ -117,8 +117,8 @@
         function loadTodos() {
             if (!currentUser) return;
             
-            // 데이터베이스 경로 지정
-            const todosRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'todos');
+            // 데이터베이스 경로 지정 (공용 폴더로 변경 완료)
+            const todosRef = collection(db, 'artifacts', appId, 'public', 'data', 'todos');
             
             // 실시간 리스너 (데이터가 바뀔 때마다 자동 실행됨)
             unsubscribeTodos = onSnapshot(todosRef, (snapshot) => {
@@ -172,7 +172,9 @@
             if (text === '') return;
 
             todoInput.value = ''; // 입력창 비우기
-            const todosRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'todos');
+            
+            // 데이터베이스 경로 지정 (공용 폴더로 변경 완료)
+            const todosRef = collection(db, 'artifacts', appId, 'public', 'data', 'todos');
             
             await addDoc(todosRef, {
                 text: text,
@@ -188,7 +190,8 @@
             // 삭제 버튼 클릭
             if (e.target.closest('.delete-btn')) {
                 const id = e.target.closest('.delete-btn').getAttribute('data-id');
-                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'todos', id);
+                // 데이터베이스 경로 지정 (공용 폴더로 변경 완료)
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'todos', id);
                 await deleteDoc(docRef);
                 return;
             }
@@ -198,7 +201,8 @@
                 const id = e.target.getAttribute('data-id');
                 const currentStatus = e.target.getAttribute('data-completed') === 'true';
                 
-                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'todos', id);
+                // 데이터베이스 경로 지정 (공용 폴더로 변경 완료)
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'todos', id);
                 await updateDoc(docRef, {
                     completed: !currentStatus
                 });
