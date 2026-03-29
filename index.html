@@ -3,37 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>실시간 투두 리스트</title>
+    <title>AI 하이브리드 투두 리스트</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .todo-item { transition: all 0.2s ease-in-out; }
         .completed-text { text-decoration: line-through; color: #9ca3af; }
+        /* 라디오 버튼 숨기기 및 커스텀 칩 스타일 */
+        input[type="radio"] { display: none; }
+        input[type="radio"]:checked + label {
+            background-color: #2563eb; color: white; border-color: #2563eb;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4 font-sans">
 
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 sm:p-8 relative">
-        <!-- 로딩 오버레이 -->
-        <div id="loadingOverlay" class="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center rounded-2xl z-10">
-            <span class="text-blue-600 font-semibold">데이터 동기화 중...</span>
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 sm:p-8 relative overflow-hidden">
+        <!-- 로딩 오버레이 (AI 처리 중) -->
+        <div id="loadingOverlay" class="absolute inset-0 bg-white bg-opacity-90 flex flex-col items-center justify-center z-50 hidden backdrop-blur-sm transition-opacity">
+            <div class="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-3"></div>
+            <span class="text-blue-600 font-bold text-lg">AI가 일정을 정리하고 있습니다...✨</span>
+            <span class="text-gray-500 text-sm mt-1">잠시만 기다려주세요</span>
         </div>
 
+        <!-- 헤더 영역 -->
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-extrabold text-gray-800 tracking-tight">✅ 오늘의 할 일</h1>
+            <h1 class="text-2xl font-extrabold text-gray-800 tracking-tight flex items-center gap-2">
+                ✨ 스마트 일정
+                <button id="settingsBtn" class="text-gray-400 hover:text-gray-700 transition-colors focus:outline-none" title="API 설정">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </button>
+            </h1>
             <span id="taskCount" class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0개 남음</span>
         </div>
 
-        <!-- 입력 창 -->
-        <div class="flex gap-2 mb-6">
-            <input type="text" id="todoInput" 
-                class="flex-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block w-full p-3 outline-none transition-shadow" 
-                placeholder="새로운 할 일을 입력하세요..."
-                autocomplete="off">
-            <button id="addButton" 
-                class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-xl text-sm px-5 py-3 transition-colors">
-                추가
-            </button>
+        <!-- 설정 패널 (처음엔 숨김) -->
+        <div id="settingsPanel" class="hidden bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6 shadow-inner">
+            <h3 class="text-sm font-bold text-gray-700 mb-2">⚙️ Gemini API 키 설정</h3>
+            <p class="text-xs text-gray-500 mb-3">발급받은 API 키를 입력하세요. 이 키는 현재 기기의 브라우저에만 안전하게 보관됩니다.</p>
+            <div class="flex gap-2">
+                <input type="password" id="apiKeyInput" class="flex-1 bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none" placeholder="AIzaSy...">
+                <button id="saveKeyBtn" class="text-white bg-gray-800 hover:bg-gray-900 rounded-lg text-sm px-4 py-2 font-medium transition-colors">저장</button>
+            </div>
+        </div>
+
+        <!-- 하이브리드 입력 폼 -->
+        <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6 space-y-4 shadow-sm">
+            <!-- 1. 대상 선택 -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">누가 하나요?</label>
+                <div class="flex gap-2">
+                    <div>
+                        <input type="radio" id="assignee_ian" name="assignee" value="이안" checked>
+                        <label for="assignee_ian" class="cursor-pointer px-4 py-1.5 rounded-full border border-gray-300 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100">👦 이안</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="assignee_jian" name="assignee" value="지안">
+                        <label for="assignee_jian" class="cursor-pointer px-4 py-1.5 rounded-full border border-gray-300 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100">👧 지안</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="assignee_family" name="assignee" value="가족공통">
+                        <label for="assignee_family" class="cursor-pointer px-4 py-1.5 rounded-full border border-gray-300 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100">🏠 가족</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. 분류 선택 -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">어떤 일인가요?</label>
+                <div class="flex flex-wrap gap-2">
+                    <div>
+                        <input type="radio" id="cat_homework" name="category" value="숙제" checked>
+                        <label for="cat_homework" class="cursor-pointer px-4 py-1.5 rounded-full border border-gray-300 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100">📚 숙제</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="cat_todo" name="category" value="할일">
+                        <label for="cat_todo" class="cursor-pointer px-4 py-1.5 rounded-full border border-gray-300 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100">✅ 할일</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="cat_meet" name="category" value="모임">
+                        <label for="cat_meet" class="cursor-pointer px-4 py-1.5 rounded-full border border-gray-300 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100">👥 모임</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="cat_appt" name="category" value="약속">
+                        <label for="cat_appt" class="cursor-pointer px-4 py-1.5 rounded-full border border-gray-300 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100">⏰ 약속</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. 기한 선택 -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">언제까지인가요?</label>
+                <input type="date" id="dueDateInput" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2 outline-none">
+            </div>
+
+            <!-- 4. 내용 입력 (자연어) -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">상세 내용을 적어주세요</label>
+                <div class="flex gap-2">
+                    <input type="text" id="todoInput" 
+                        class="flex-1 bg-white border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block w-full p-3 outline-none transition-shadow" 
+                        placeholder="예: 영어 단어 30개 외우기"
+                        autocomplete="off">
+                    <button id="addButton" 
+                        class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-bold rounded-xl text-sm px-5 py-3 transition-colors flex items-center gap-1 shadow-md whitespace-nowrap">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        AI 등록
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- 투두 리스트 출력 영역 -->
@@ -46,14 +124,14 @@
         </p>
     </div>
 
-    <!-- Firebase SDK (v11) 모듈 불러오기 -->
+    <!-- Firebase SDK 모듈 불러오기 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ==========================================
-        // 💡 여기에 본인의 Firebase 설정값을 넣어주세요!
+        // 1. Firebase 설정 (유저님 정보로 픽스완료!)
         // ==========================================
         const myFirebaseConfig = {
             apiKey: "AIzaSyA9NGhnuq4Dsf4qq_JqIv1qlgoQ3ocvowM",
@@ -64,12 +142,7 @@
             appId: "1:5187329075:web:d0ba327669c08534365746"
         };
 
-        // 환경에 따른 설정 처리 (이 플랫폼 내부 실행용과 외부 배포용 모두 지원)
-        let firebaseConfig = myFirebaseConfig;
-        if (typeof window.__firebase_config !== 'undefined') {
-            try { firebaseConfig = JSON.parse(window.__firebase_config); } catch(e) {}
-        }
-        
+        const firebaseConfig = myFirebaseConfig;
         const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'my-github-todo';
 
         // Firebase 초기화
@@ -83,133 +156,268 @@
         const todoList = document.getElementById('todoList');
         const taskCount = document.getElementById('taskCount');
         const loadingOverlay = document.getElementById('loadingOverlay');
+        const dueDateInput = document.getElementById('dueDateInput');
+        
+        // 설정 패널 요소
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsPanel = document.getElementById('settingsPanel');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const saveKeyBtn = document.getElementById('saveKeyBtn');
+
+        // 오늘 날짜로 기본 세팅
+        const today = new Date().toISOString().split('T')[0];
+        dueDateInput.value = today;
 
         let currentUser = null;
-        let unsubscribeTodos = null; // 리스너 해제용
 
-        // 1. 익명 로그인 (사용자 식별용)
+        // --- 로컬 스토리지 API 키 관리 ---
+        // 화면 시작 시 저장된 키 불러오기
+        const savedKey = localStorage.getItem('my_gemini_api_key');
+        if (savedKey) {
+            apiKeyInput.value = savedKey;
+        }
+
+        // 설정 버튼 클릭 시 패널 열기/닫기
+        settingsBtn.addEventListener('click', () => {
+            settingsPanel.classList.toggle('hidden');
+        });
+
+        // 키 저장 버튼 클릭 시
+        saveKeyBtn.addEventListener('click', () => {
+            const key = apiKeyInput.value.trim();
+            if(key) {
+                localStorage.setItem('my_gemini_api_key', key);
+                alert('API 키가 로컬 기기에 안전하게 저장되었습니다!');
+                settingsPanel.classList.add('hidden');
+            } else {
+                alert('API 키를 입력해주세요.');
+            }
+        });
+
+        // --- Firebase 익명 로그인 (필수 규칙 준수) ---
         const initAuth = async () => {
             try {
                 if (typeof window.__initial_auth_token !== 'undefined' && window.__initial_auth_token) {
-                    import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js").then(({ signInWithCustomToken }) => {
-                        signInWithCustomToken(auth, window.__initial_auth_token);
-                    });
+                    await signInWithCustomToken(auth, window.__initial_auth_token);
                 } else {
                     await signInAnonymously(auth);
                 }
             } catch (error) {
                 console.error("Auth error:", error);
-                loadingOverlay.innerHTML = '<span class="text-red-500">인증 실패. 설정을 확인해주세요.</span>';
+                alert("데이터베이스 인증에 실패했습니다.");
             }
         };
 
-        // 2. 인증 상태 감지 및 데이터 불러오기
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
                 loadTodos();
             }
         });
-
+        
+        // 처음 실행 시 인증 호출
         initAuth();
 
-        // 3. 실시간 데이터 불러오기 함수
+        // --- 실시간 데이터 불러오기 ---
         function loadTodos() {
             if (!currentUser) return;
             
-            // 데이터베이스 경로 지정 (공용 폴더로 변경 완료)
+            // 공용 데이터베이스 경로 (strict path rules 준수)
             const todosRef = collection(db, 'artifacts', appId, 'public', 'data', 'todos');
             
-            // 실시간 리스너 (데이터가 바뀔 때마다 자동 실행됨)
-            unsubscribeTodos = onSnapshot(todosRef, (snapshot) => {
+            onSnapshot(todosRef, (snapshot) => {
                 todoList.innerHTML = '';
                 let remainingCount = 0;
                 
-                // 생성 시간순 정렬 (클라이언트 단에서 처리)
                 const docs = [];
                 snapshot.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
-                docs.sort((a, b) => a.createdAt - b.createdAt);
+                
+                // 마감일(dueDate) 순으로 정렬, 같으면 생성 시간순 정렬 (클라이언트 단 처리)
+                docs.sort((a, b) => {
+                    if (a.dueDate === b.dueDate) return b.createdAt - a.createdAt;
+                    return new Date(a.dueDate) - new Date(b.dueDate);
+                });
 
                 docs.forEach((data) => {
                     if (!data.completed) remainingCount++;
-                    renderTodoItem(data.id, data.text, data.completed);
+                    renderTodoItem(data);
                 });
 
                 taskCount.textContent = `${remainingCount}개 남음`;
-                loadingOverlay.style.display = 'none'; // 로딩 숨김
             }, (error) => {
                 console.error("Firestore error:", error);
-                loadingOverlay.innerHTML = '<span class="text-red-500">데이터를 불러오지 못했습니다.</span>';
             });
         }
 
         // 화면에 아이템 그리기
-        function renderTodoItem(id, text, completed) {
+        function renderTodoItem(data) {
             const li = document.createElement('li');
-            li.className = `todo-item flex items-center justify-between p-3 rounded-xl border ${completed ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-200 shadow-sm'}`;
+            li.className = `todo-item flex flex-col p-4 rounded-xl border ${data.completed ? 'bg-gray-50 border-gray-200 opacity-60' : 'bg-white border-blue-100 shadow-sm'}`;
             
+            // 태그 뱃지 생성
+            const tagsHtml = (data.tags || []).map(tag => `<span class="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded-md">#${tag}</span>`).join('');
+
             li.innerHTML = `
-                <div class="flex items-center gap-3 flex-1 overflow-hidden">
+                <div class="flex items-start justify-between mb-2">
+                    <div class="flex gap-2 items-center flex-wrap">
+                        <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-md">👤 ${data.assignee}</span>
+                        <span class="bg-orange-100 text-orange-800 text-xs font-bold px-2 py-1 rounded-md">📌 ${data.category}</span>
+                        <span class="text-xs font-semibold ${new Date(data.dueDate) < new Date(today) && !data.completed ? 'text-red-500 bg-red-50' : 'text-gray-500 border border-gray-200'} px-2 py-1 rounded-md">
+                            📅 ${data.dueDate}
+                        </span>
+                    </div>
+                    <button data-id="${data.id}" class="delete-btn text-gray-400 hover:text-red-500 transition-colors p-1 -mt-1 -mr-1">
+                        <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </div>
+                <div class="flex items-center gap-3 w-full pl-1 mt-1">
                     <input type="checkbox" 
                         class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer flex-shrink-0"
-                        ${completed ? 'checked' : ''} 
-                        data-id="${id}" data-completed="${completed}">
-                    <span class="truncate text-sm sm:text-base ${completed ? 'completed-text' : 'text-gray-700'} cursor-pointer toggle-text" data-id="${id}" data-completed="${completed}">
-                        ${text}
+                        ${data.completed ? 'checked' : ''} 
+                        data-id="${data.id}" data-completed="${data.completed}">
+                    <span class="text-base font-bold ${data.completed ? 'completed-text' : 'text-gray-800'} cursor-pointer toggle-text flex-1" data-id="${data.id}" data-completed="${data.completed}">
+                        ${data.task}
                     </span>
                 </div>
-                <button data-id="${id}" class="delete-btn text-gray-400 hover:text-red-500 transition-colors p-1 flex-shrink-0">
-                    <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                </button>
+                <div class="flex flex-wrap gap-1 mt-3 pl-9">
+                    ${tagsHtml}
+                </div>
             `;
             todoList.appendChild(li);
         }
 
-        // 4. 데이터 추가 함수
+        // --- AI 처리 및 데이터 추가 ---
         async function addTodo() {
             if (!currentUser) return;
             const text = todoInput.value.trim();
-            if (text === '') return;
-
-            todoInput.value = ''; // 입력창 비우기
-            
-            // 데이터베이스 경로 지정 (공용 폴더로 변경 완료)
-            const todosRef = collection(db, 'artifacts', appId, 'public', 'data', 'todos');
-            
-            await addDoc(todosRef, {
-                text: text,
-                completed: false,
-                createdAt: Date.now()
-            });
-        }
-
-        // 5. 체크/해제 및 삭제 이벤트 위임 (한 번에 묶어서 처리)
-        todoList.addEventListener('click', async (e) => {
-            if (!currentUser) return;
-
-            // 삭제 버튼 클릭
-            if (e.target.closest('.delete-btn')) {
-                const id = e.target.closest('.delete-btn').getAttribute('data-id');
-                // 데이터베이스 경로 지정 (공용 폴더로 변경 완료)
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'todos', id);
-                await deleteDoc(docRef);
+            if (text === '') {
+                alert("상세 내용을 입력해주세요!");
                 return;
             }
 
-            // 체크박스 또는 텍스트 클릭 (토글)
+            // API 키 확인 로직 (Local Storage 우선, 없으면 캔버스 환경 변수 사용)
+            const currentGeminiKey = localStorage.getItem('my_gemini_api_key') || (typeof window.__gemini_api_key !== 'undefined' ? window.__gemini_api_key : "");
+            
+            if (!currentGeminiKey) {
+                alert("상단의 ⚙️(설정) 버튼을 눌러 Gemini API 키를 먼저 등록해주세요!");
+                settingsPanel.classList.remove('hidden');
+                apiKeyInput.focus();
+                return;
+            }
+
+            // UI에서 선택한 값들 가져오기
+            const assignee = document.querySelector('input[name="assignee"]:checked').value;
+            const category = document.querySelector('input[name="category"]:checked').value;
+            const dueDate = dueDateInput.value;
+
+            // 로딩 화면 표시
+            loadingOverlay.classList.remove('hidden');
+
+            try {
+                // Gemini API 호출
+                const aiResult = await processWithGemini(currentGeminiKey, assignee, category, dueDate, text);
+                
+                // Firebase에 저장
+                const todosRef = collection(db, 'artifacts', appId, 'public', 'data', 'todos');
+                await addDoc(todosRef, {
+                    task: aiResult.task,
+                    assignee: aiResult.assignee,
+                    category: aiResult.category,
+                    dueDate: aiResult.dueDate,
+                    tags: aiResult.tags,
+                    completed: false,
+                    createdAt: Date.now(),
+                    rawText: text 
+                });
+
+                todoInput.value = ''; // 입력창 비우기
+
+            } catch (error) {
+                console.error("AI Processing Error:", error);
+                alert("AI 처리 중 오류가 발생했습니다. API 키가 정확한지 확인해주세요.");
+            } finally {
+                // 로딩 화면 숨김
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+
+        // --- Gemini API 통신부 ---
+        async function processWithGemini(apiKey, assignee, category, dueDate, rawText) {
+            // 가장 빠르고 저렴한 최신 플래시 모델 사용
+            const modelName = "gemini-2.5-flash"; 
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+            const prompt = `
+            너는 스마트 일정 관리 보조 AI야.
+            오늘 날짜는 ${new Date().toISOString().split('T')[0]}야.
+            
+            사용자가 UI에서 선택한 [메타 정보]와 입력한 [상세 내용]을 바탕으로 일정을 깔끔하게 다듬어서 JSON으로 반환해줘.
+            
+            [메타 정보]
+            - 대상: ${assignee}
+            - 분류: ${category}
+            - 기한: ${dueDate}
+            
+            [상세 내용 (자연어)]
+            "${rawText}"
+            
+            [지시사항]
+            1. 'task' 필드는 상세 내용을 바탕으로 아주 간결하고 명확한 문장형(명사형 종결) 제목으로 만들어줘.
+            2. 사용자가 자연어 내용 안에 날짜나 시간을 암시하는 말(예: 내일, 금요일)을 적었다면, 그에 맞춰 'dueDate'를 YYYY-MM-DD 형식으로 변경해도 돼. 명확한 언급이 없다면 전달받은 [기한]을 그대로 써.
+            3. 'tags'는 이 일정과 관련된 핵심 키워드를 2~3개 정도 배열로 만들어줘.
+            
+            반드시 아래 JSON 스키마 구조로만 대답해. (마크다운 백틱 제외하고 순수 JSON만 출력할 것)
+            {
+                "task": "다듬어진 할 일 제목",
+                "dueDate": "YYYY-MM-DD",
+                "assignee": "${assignee}",
+                "category": "${category}",
+                "tags": ["키워드1", "키워드2"]
+            }
+            `;
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        responseMimeType: "application/json"
+                    }
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.error.message);
+            }
+
+            const resultText = data.candidates[0].content.parts[0].text;
+            return JSON.parse(resultText);
+        }
+
+        // 이벤트 리스너들
+        todoList.addEventListener('click', async (e) => {
+            if (!currentUser) return;
+
+            // 삭제
+            if (e.target.closest('.delete-btn')) {
+                const id = e.target.closest('.delete-btn').getAttribute('data-id');
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'todos', id));
+                return;
+            }
+
+            // 완료 토글
             if (e.target.matches('input[type="checkbox"]') || e.target.matches('.toggle-text')) {
                 const id = e.target.getAttribute('data-id');
                 const currentStatus = e.target.getAttribute('data-completed') === 'true';
-                
-                // 데이터베이스 경로 지정 (공용 폴더로 변경 완료)
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'todos', id);
-                await updateDoc(docRef, {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'todos', id), {
                     completed: !currentStatus
                 });
             }
         });
 
-        // 엔터키 및 추가 버튼 이벤트
         addButton.addEventListener('click', addTodo);
         todoInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') addTodo();
