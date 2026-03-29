@@ -3,18 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>나만의 투두 리스트</title>
-    <!-- Tailwind CSS를 CDN으로 불러와 깔끔한 디자인 적용 -->
+    <title>실시간 투두 리스트</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 체크박스 커스텀 애니메이션 */
         .todo-item { transition: all 0.2s ease-in-out; }
         .completed-text { text-decoration: line-through; color: #9ca3af; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4 font-sans">
 
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 sm:p-8">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 sm:p-8 relative">
+        <!-- 로딩 오버레이 -->
+        <div id="loadingOverlay" class="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center rounded-2xl z-10">
+            <span class="text-blue-600 font-semibold">데이터 동기화 중...</span>
+        </div>
+
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-extrabold text-gray-800 tracking-tight">✅ 오늘의 할 일</h1>
             <span id="taskCount" class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">0개 남음</span>
@@ -37,91 +41,176 @@
             <!-- 자바스크립트를 통해 여기에 할 일들이 추가됩니다 -->
         </ul>
         
-        <!-- 데이터 초기화 안내 -->
         <p class="text-xs text-gray-400 text-center mt-6">
-            데이터는 현재 브라우저에 안전하게 자동 저장됩니다.
+            데이터는 클라우드에 실시간으로 안전하게 동기화됩니다.
         </p>
     </div>
 
-    <script>
-        // DOM 요소 가져오기
+    <!-- Firebase SDK (v11) 모듈 불러오기 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ==========================================
+        // 💡 여기에 본인의 Firebase 설정값을 넣어주세요!
+        // ==========================================
+        const myFirebaseConfig = {
+            apiKey: "AIzaSyA9NGhnuq4Dsf4qq_JqIv1qlgoQ3ocvowM",
+            authDomain: "mytodo-3fb4d.firebaseapp.com",
+            projectId: "mytodo-3fb4d",
+            storageBucket: "mytodo-3fb4d.firebasestorage.app",
+            messagingSenderId: "5187329075",
+            appId: "1:5187329075:web:d0ba327669c08534365746"
+        };
+
+        // 환경에 따른 설정 처리 (이 플랫폼 내부 실행용과 외부 배포용 모두 지원)
+        let firebaseConfig = myFirebaseConfig;
+        if (typeof window.__firebase_config !== 'undefined') {
+            try { firebaseConfig = JSON.parse(window.__firebase_config); } catch(e) {}
+        }
+        
+        const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'my-github-todo';
+
+        // Firebase 초기화
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // DOM 요소
         const todoInput = document.getElementById('todoInput');
         const addButton = document.getElementById('addButton');
         const todoList = document.getElementById('todoList');
         const taskCount = document.getElementById('taskCount');
+        const loadingOverlay = document.getElementById('loadingOverlay');
 
-        // 로컬 스토리지에서 투두 데이터 불러오기 (없으면 빈 배열)
-        let todos = JSON.parse(localStorage.getItem('myTodos')) || [];
+        let currentUser = null;
+        let unsubscribeTodos = null; // 리스너 해제용
 
-        // 화면에 투두 리스트 렌더링하는 함수
-        function renderTodos() {
-            todoList.innerHTML = '';
-            let remainingCount = 0;
-
-            todos.forEach((todo, index) => {
-                if (!todo.completed) remainingCount++;
-
-                const li = document.createElement('li');
-                li.className = `todo-item flex items-center justify-between p-3 rounded-xl border ${todo.completed ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-200 shadow-sm'}`;
-                
-                li.innerHTML = `
-                    <div class="flex items-center gap-3 flex-1 overflow-hidden">
-                        <input type="checkbox" 
-                            class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer flex-shrink-0"
-                            ${todo.completed ? 'checked' : ''} 
-                            onchange="toggleTodo(${index})">
-                        <span class="truncate text-sm sm:text-base ${todo.completed ? 'completed-text' : 'text-gray-700'} cursor-pointer" onclick="toggleTodo(${index})">
-                            ${todo.text}
-                        </span>
-                    </div>
-                    <button onclick="deleteTodo(${index})" class="text-gray-400 hover:text-red-500 transition-colors p-1 flex-shrink-0">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
-                `;
-                todoList.appendChild(li);
-            });
-
-            // 남은 할 일 개수 업데이트
-            taskCount.textContent = `${remainingCount}개 남음`;
-            
-            // 로컬 스토리지에 저장
-            localStorage.setItem('myTodos', JSON.stringify(todos));
-        }
-
-        // 새로운 투두 추가 함수
-        function addTodo() {
-            const text = todoInput.value.trim();
-            if (text !== '') {
-                todos.push({ text: text, completed: false });
-                todoInput.value = '';
-                renderTodos();
+        // 1. 익명 로그인 (사용자 식별용)
+        const initAuth = async () => {
+            try {
+                if (typeof window.__initial_auth_token !== 'undefined' && window.__initial_auth_token) {
+                    import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js").then(({ signInWithCustomToken }) => {
+                        signInWithCustomToken(auth, window.__initial_auth_token);
+                    });
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth error:", error);
+                loadingOverlay.innerHTML = '<span class="text-red-500">인증 실패. 설정을 확인해주세요.</span>';
             }
-        }
+        };
 
-        // 투두 완료 상태 토글 함수
-        window.toggleTodo = function(index) {
-            todos[index].completed = !todos[index].completed;
-            renderTodos();
-        }
-
-        // 투두 삭제 함수
-        window.deleteTodo = function(index) {
-            todos.splice(index, 1);
-            renderTodos();
-        }
-
-        // 이벤트 리스너: 추가 버튼 클릭
-        addButton.addEventListener('click', addTodo);
-
-        // 이벤트 리스너: 엔터키 입력 시 추가
-        todoInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                addTodo();
+        // 2. 인증 상태 감지 및 데이터 불러오기
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                loadTodos();
             }
         });
 
-        // 초기 화면 렌더링
-        renderTodos();
+        initAuth();
+
+        // 3. 실시간 데이터 불러오기 함수
+        function loadTodos() {
+            if (!currentUser) return;
+            
+            // 데이터베이스 경로 지정
+            const todosRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'todos');
+            
+            // 실시간 리스너 (데이터가 바뀔 때마다 자동 실행됨)
+            unsubscribeTodos = onSnapshot(todosRef, (snapshot) => {
+                todoList.innerHTML = '';
+                let remainingCount = 0;
+                
+                // 생성 시간순 정렬 (클라이언트 단에서 처리)
+                const docs = [];
+                snapshot.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
+                docs.sort((a, b) => a.createdAt - b.createdAt);
+
+                docs.forEach((data) => {
+                    if (!data.completed) remainingCount++;
+                    renderTodoItem(data.id, data.text, data.completed);
+                });
+
+                taskCount.textContent = `${remainingCount}개 남음`;
+                loadingOverlay.style.display = 'none'; // 로딩 숨김
+            }, (error) => {
+                console.error("Firestore error:", error);
+                loadingOverlay.innerHTML = '<span class="text-red-500">데이터를 불러오지 못했습니다.</span>';
+            });
+        }
+
+        // 화면에 아이템 그리기
+        function renderTodoItem(id, text, completed) {
+            const li = document.createElement('li');
+            li.className = `todo-item flex items-center justify-between p-3 rounded-xl border ${completed ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-200 shadow-sm'}`;
+            
+            li.innerHTML = `
+                <div class="flex items-center gap-3 flex-1 overflow-hidden">
+                    <input type="checkbox" 
+                        class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer flex-shrink-0"
+                        ${completed ? 'checked' : ''} 
+                        data-id="${id}" data-completed="${completed}">
+                    <span class="truncate text-sm sm:text-base ${completed ? 'completed-text' : 'text-gray-700'} cursor-pointer toggle-text" data-id="${id}" data-completed="${completed}">
+                        ${text}
+                    </span>
+                </div>
+                <button data-id="${id}" class="delete-btn text-gray-400 hover:text-red-500 transition-colors p-1 flex-shrink-0">
+                    <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+            `;
+            todoList.appendChild(li);
+        }
+
+        // 4. 데이터 추가 함수
+        async function addTodo() {
+            if (!currentUser) return;
+            const text = todoInput.value.trim();
+            if (text === '') return;
+
+            todoInput.value = ''; // 입력창 비우기
+            const todosRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'todos');
+            
+            await addDoc(todosRef, {
+                text: text,
+                completed: false,
+                createdAt: Date.now()
+            });
+        }
+
+        // 5. 체크/해제 및 삭제 이벤트 위임 (한 번에 묶어서 처리)
+        todoList.addEventListener('click', async (e) => {
+            if (!currentUser) return;
+
+            // 삭제 버튼 클릭
+            if (e.target.closest('.delete-btn')) {
+                const id = e.target.closest('.delete-btn').getAttribute('data-id');
+                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'todos', id);
+                await deleteDoc(docRef);
+                return;
+            }
+
+            // 체크박스 또는 텍스트 클릭 (토글)
+            if (e.target.matches('input[type="checkbox"]') || e.target.matches('.toggle-text')) {
+                const id = e.target.getAttribute('data-id');
+                const currentStatus = e.target.getAttribute('data-completed') === 'true';
+                
+                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'todos', id);
+                await updateDoc(docRef, {
+                    completed: !currentStatus
+                });
+            }
+        });
+
+        // 엔터키 및 추가 버튼 이벤트
+        addButton.addEventListener('click', addTodo);
+        todoInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTodo();
+        });
+
     </script>
 </body>
 </html>
