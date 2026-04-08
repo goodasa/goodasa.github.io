@@ -757,8 +757,8 @@
                 '<article class="' + toneClass + (hasIllustration ? ' has-figure' : "") + '">',
                 '<span class="memory-card-label">카드 ' + escapeHtml(String(index + 1)) + "</span>",
                 '<div class="memory-card-copy">',
-                '<strong class="memory-card-front">' + escapeHtml(item.front) + "</strong>",
-                '<span class="memory-card-back">' + escapeHtml(item.back) + "</span>",
+                '<strong class="memory-card-front" title="' + escapeHtml(item.front) + '">' + escapeHtml(item.front) + "</strong>",
+                '<span class="memory-card-back" title="' + escapeHtml(item.back) + '">' + escapeHtml(item.back) + "</span>",
                 '</div>',
                 hasIllustration
                     ? '<div class="memory-card-figure"><img class="memory-card-image" src="' + escapeHtml(item.illustration) + '" alt="' + escapeHtml(item.front + " 도해") + '" loading="eager"></div>'

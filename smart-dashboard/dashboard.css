@@ -19,6 +19,8 @@
     --radius-md: 12px;
     --radius-sm: 10px;
     --memory-figure-ratio: 4 / 3;
+    --memory-front-height: 48px;
+    --memory-back-height: 58px;
     --screen-shift-x: 0px;
     --screen-shift-y: 0px;
 }
@@ -495,7 +497,7 @@ body::after {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
-    align-items: start;
+    align-items: stretch;
 }
 
 .memory-card {
@@ -504,16 +506,17 @@ body::after {
     padding: 10px 10px 12px;
     border-radius: var(--radius-sm);
     display: grid;
+    grid-template-rows: auto calc(var(--memory-front-height) + var(--memory-back-height) + 4px) minmax(0, 1fr);
     align-content: start;
     justify-items: stretch;
     align-items: start;
     gap: 6px;
     text-align: left;
     border: 1px solid rgba(255, 255, 255, 0.08);
+    height: 100%;
 }
 
 .memory-card.has-figure {
-    min-height: 0;
     gap: 8px;
 }
 
@@ -535,8 +538,10 @@ body::after {
 
 .memory-card-copy {
     display: grid;
+    grid-template-rows: var(--memory-front-height) var(--memory-back-height);
     gap: 4px;
     width: 100%;
+    min-height: 0;
 }
 
 .memory-card-front {
@@ -547,6 +552,11 @@ body::after {
     word-break: keep-all;
     overflow-wrap: anywhere;
     text-align: center;
+    max-height: var(--memory-front-height);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
 }
 
 .memory-card-back {
@@ -556,6 +566,11 @@ body::after {
     word-break: keep-all;
     overflow-wrap: anywhere;
     text-align: center;
+    max-height: var(--memory-back-height);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
 }
 
 .memory-card-figure {
