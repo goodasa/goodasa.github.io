@@ -1,0 +1,19 @@
+{
+  "name": "CHUWI 13 스마트 현황판",
+  "short_name": "스마트 현황판",
+  "description": "실시간 할일과 일정 표시를 위한 읽기 전용 디지털 현황판",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0f1117",
+  "theme_color": "#0f1117",
+  "icons": [
+    {
+      "src": "./icon-dashboard.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

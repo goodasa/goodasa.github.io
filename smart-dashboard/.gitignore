@@ -1,0 +1,5 @@
+local_secrets.env
+.env
+.env.local
+__pycache__/
+.DS_Store

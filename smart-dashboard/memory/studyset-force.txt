@@ -1,0 +1,5 @@
+# 강제로 보여줄 StudySet 파일명을 한 줄에 하나씩 적으세요.
+# 비워두면 Gemini 또는 규칙 기반 자동 선택을 사용합니다.
+# 예시:
+# science.md
+ english.md

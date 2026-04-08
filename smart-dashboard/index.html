@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>CHUWI 13 스마트 현황판</title>
+    <meta name="description" content="CHUWI 13 노트북에서 바로 띄울 수 있는 읽기 전용 스마트 현황판">
+    <meta name="theme-color" content="#0f1117">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="스마트 현황판">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" href="./icon-dashboard.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icon-dashboard.svg">
+    <link rel="stylesheet" href="./dashboard.css?v=20260407-4">
+</head>
+<body>
+    <div class="screen-shell">
+        <header class="dashboard-header panel">
+            <section class="header-weather" id="weather-strip">
+                <div class="weather-compact-item">
+                    <span class="weather-compact-day">오늘</span>
+                    <span class="weather-compact-icon">...</span>
+                    <span class="weather-compact-temp">--°/--°</span>
+                    <span class="weather-compact-summary">불러오는 중</span>
+                </div>
+                <div class="weather-compact-item">
+                    <span class="weather-compact-day">내일</span>
+                    <span class="weather-compact-icon">...</span>
+                    <span class="weather-compact-temp">--°/--°</span>
+                    <span class="weather-compact-summary">불러오는 중</span>
+                </div>
+            </section>
+
+            <section class="header-clock">
+                <div class="clock-time" id="current-time">--:--</div>
+                <div class="clock-date" id="current-date">날짜 불러오는 중</div>
+            </section>
+
+            <section class="header-status">
+                <div class="status-chip-group">
+                    <span class="status-chip" id="weather-location-chip">서울</span>
+                    <span class="status-chip" id="display-mode-chip">브라우저 모드</span>
+                    <span class="status-chip mono" id="last-sync-chip">대기 중</span>
+                    <button class="status-action" id="memory-sync-button" type="button">업데이트</button>
+                </div>
+                <div class="status-live">
+                    <span class="status-dot" id="status-dot"></span>
+                    <span id="status-label">Firebase 연결 준비 중</span>
+                </div>
+            </section>
+        </header>
+
+        <main class="dashboard-main">
+            <aside class="column column-left">
+                <section class="panel stats-panel">
+                    <div class="stats-grid" id="summary-grid">
+                        <article class="stat-block">
+                            <span class="stat-label">전체</span>
+                            <strong class="stat-value">-</strong>
+                        </article>
+                        <article class="stat-block">
+                            <span class="stat-label">마감</span>
+                            <strong class="stat-value">-</strong>
+                        </article>
+                        <article class="stat-block">
+                            <span class="stat-label">약속</span>
+                            <strong class="stat-value">-</strong>
+                        </article>
+                        <article class="stat-block">
+                            <span class="stat-label">지연</span>
+                            <strong class="stat-value danger">-</strong>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="panel dense-panel panel-auto" id="appointment-panel">
+                    <div class="panel-bar">
+                        <span class="panel-title">약속 / 모임</span>
+                        <span class="panel-count" id="appointment-count">0</span>
+                    </div>
+                    <div class="dense-list compact-empty" id="appointment-list">
+                        약속과 모임이 없습니다.
+                    </div>
+                </section>
+            </aside>
+
+            <section class="panel schedule-panel">
+                <div class="panel-bar">
+                    <span class="panel-title">오늘 일정</span>
+                    <span class="panel-subtitle" id="today-schedule-day">--요일</span>
+                </div>
+                <div class="schedule-columns">
+                    <section class="schedule-column schedule-school">
+                        <div class="panel-bar panel-bar-inline">
+                            <span class="panel-mini-title">학교</span>
+                            <span class="panel-count" id="school-count">0</span>
+                        </div>
+                        <div class="schedule-dense-list compact-empty" id="school-schedule-list">
+                            학교 시간표가 없습니다.
+                        </div>
+                        <section class="memory-panel memory-panel-school">
+                            <div class="memory-bar">
+                                <span class="memory-title" id="memory-english-title">StudySet 01</span>
+                                <span class="memory-phase" id="memory-english-phase">영어 · 단어 · 3초</span>
+                            </div>
+                            <div class="memory-grid compact-empty" id="memory-english-list">
+                                단어를 불러오는 중입니다.
+                            </div>
+                        </section>
+                    </section>
+
+                    <section class="schedule-column schedule-cram">
+                        <div class="panel-bar panel-bar-inline">
+                            <span class="panel-mini-title">학원</span>
+                            <span class="panel-count" id="cram-count">0</span>
+                        </div>
+                        <div class="schedule-dense-list compact-empty" id="cram-schedule-list">
+                            학원 일정이 없습니다.
+                        </div>
+                        <section class="memory-panel memory-panel-cram">
+                            <div class="memory-bar">
+                                <span class="memory-title" id="memory-korean-title">StudySet 02</span>
+                                <span class="memory-phase" id="memory-korean-phase">국어 · 단어 · 3초</span>
+                            </div>
+                            <div class="memory-grid compact-empty" id="memory-korean-list">
+                                단어를 불러오는 중입니다.
+                            </div>
+                        </section>
+                    </section>
+                </div>
+            </section>
+
+            <aside class="column column-right">
+                <section class="panel dense-panel panel-fill" id="todo-panel">
+                    <div class="panel-bar">
+                        <span class="panel-title">할일</span>
+                        <span class="panel-count" id="todo-count">0</span>
+                    </div>
+                    <div class="dense-list compact-empty" id="todo-list">
+                        할일이 없습니다.
+                    </div>
+                </section>
+
+                <section class="panel dense-panel panel-auto" id="homework-panel">
+                    <div class="panel-bar">
+                        <span class="panel-title">숙제</span>
+                        <span class="panel-count" id="homework-count">0</span>
+                    </div>
+                    <div class="dense-list compact-empty" id="homework-list">
+                        숙제가 없습니다.
+                    </div>
+                </section>
+            </aside>
+        </main>
+    </div>
+    <div class="dashboard-toast" id="dashboard-toast" aria-live="polite"></div>
+
+    <script src="./dashboard-config.js?v=20260407-4"></script>
+    <script src="./school-parser.js?v=20260407-4"></script>
+    <script src="./cram-parser.js?v=20260407-4"></script>
+    <script src="./memory-parser.js?v=20260407-4"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+    <script src="./dashboard.js?v=20260407-4"></script>
+</body>
+</html>
